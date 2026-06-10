@@ -41,3 +41,17 @@ This means no hardcoded permanent stream URL is needed; each playback resolves a
 - `plugin.video.m4sport/resources/lib/m4sport_core.py` – stream URL extraction logic
 - `plugin.video.m4sport/resources/settings.xml` – plugin settings (`source_page_url`, `channel_name`)
 - `plugin.video.m4sport/addon.xml` – Kodi addon metadata and extension registration
+
+## `m4sport-vlc.py`
+
+At the repository root there is also a standalone helper script:
+
+- `m4sport-vlc.py`
+
+It resolves the current M4 Sport live URL the same way as the Kodi plugin and prints the final stream URL (`.m3u8`/`.mpd`) for external players.
+
+Usage:
+
+1. `python3 m4sport-vlc.py`
+2. Optional custom page URL: `python3 m4sport-vlc.py https://mediaklikk.hu/elo/mtv4live/`
+3. Optional direct launch in VLC: `python3 m4sport-vlc.py --open-vlc`
