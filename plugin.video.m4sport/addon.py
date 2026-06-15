@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import json
 import os
 import sys
 from urllib.parse import parse_qs, urlencode
@@ -39,17 +40,35 @@ def plugin_url(base_url, query):
     return f"{base_url}?{urlencode(query)}"
 
 
+def _jsonrpc(method, params):
+    req = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params})
+    return json.loads(xbmc.executeJSONRPC(req))
+
+
 def _ensure_inputstream_adaptive():
-    """Return True if inputstream.adaptive is enabled, installing it if needed."""
-    if xbmc.getCondVisibility(f"System.HasAddon({_INPUTSTREAM_ADDON})"):
-        xbmc.executebuiltin(f"EnableAddon({_INPUTSTREAM_ADDON})", True)
+    """Return True if inputstream.adaptive is enabled, enabling it silently via JSON-RPC."""
+    result = _jsonrpc("Addons.GetAddonDetails",
+                      {"addonid": _INPUTSTREAM_ADDON, "properties": ["enabled"]})
+    addon_info = result.get("result", {}).get("addon", {})
+    if addon_info.get("enabled"):
         return True
-    # Attempt automatic installation via Kodi's built-in addon manager.
+
+    if "error" not in result and addon_info:
+        # Installed but disabled — enable silently without any dialog
+        enable_result = _jsonrpc("Addons.SetAddonEnabled",
+                                 {"addonid": _INPUTSTREAM_ADDON, "enabled": True})
+        if enable_result.get("result") == "OK":
+            return True
+
+    # Not installed — attempt auto-install (one-time only, may show install dialog)
     log("inputstream.adaptive not found, attempting install…")
     xbmc.executebuiltin(f"InstallAddon({_INPUTSTREAM_ADDON})", True)
-    if xbmc.getCondVisibility(f"System.HasAddon({_INPUTSTREAM_ADDON})"):
-        xbmc.executebuiltin(f"EnableAddon({_INPUTSTREAM_ADDON})", True)
+    result = _jsonrpc("Addons.GetAddonDetails",
+                      {"addonid": _INPUTSTREAM_ADDON, "properties": ["enabled"]})
+    if result.get("result", {}).get("addon"):
+        _jsonrpc("Addons.SetAddonEnabled", {"addonid": _INPUTSTREAM_ADDON, "enabled": True})
         return True
+
     xbmcgui.Dialog().ok(
         ADDON.getAddonInfo("name"),
         "inputstream.adaptive is required but could not be installed automatically.\n"
