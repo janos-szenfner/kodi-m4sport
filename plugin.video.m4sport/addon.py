@@ -16,12 +16,14 @@ ADDON = xbmcaddon.Addon()
 ADDON_ID = ADDON.getAddonInfo("id")
 ADDON_PATH = xbmcvfs.translatePath(ADDON.getAddonInfo("path"))
 ADDON_ICON = os.path.join(ADDON_PATH, "icon.png")
+MEDIA_PATH = os.path.join(ADDON_PATH, "resources", "media")
 LIB_PATH = os.path.join(ADDON_PATH, "resources", "lib")
 if LIB_PATH not in sys.path:
     sys.path.insert(0, LIB_PATH)
 
-from m4sport_core import fetch_stream_url, normalize_page_url  # noqa: E402
-from cdm_installer import ensure_widevine_cdm                  # noqa: E402
+import m4sport_core
+import mediaklikk_core
+from cdm_installer import ensure_widevine_cdm
 
 _INPUTSTREAM_ADDON = "inputstream.adaptive"
 
@@ -31,6 +33,16 @@ _STREAM_HEADERS = (
     "&Referer=https%3A%2F%2Fplayer.mediaklikk.hu%2F"
 )
 
+# Map URL substrings to icon filenames in resources/media/
+_URL_ICON_MAP = (
+    ("m4sport.hu",  "m4sport.png"),
+    ("/mtv4live",   "m4sport.png"),
+    ("/mtv1live",   "m1.png"),
+    ("/mtv2live",   "m2.png"),
+    ("/mtv5live",   "m5.png"),
+    ("/dunalive",   "duna.png"),
+)
+
 
 def log(message, level=xbmc.LOGINFO):
     xbmc.log(f"[{ADDON_ID}] {message}", level)
@@ -38,6 +50,13 @@ def log(message, level=xbmc.LOGINFO):
 
 def plugin_url(base_url, query):
     return f"{base_url}?{urlencode(query)}"
+
+
+def _icon_for_url(url):
+    for fragment, filename in _URL_ICON_MAP:
+        if fragment in url:
+            return os.path.join(MEDIA_PATH, filename)
+    return ADDON_ICON
 
 
 def _jsonrpc(method, params):
@@ -78,18 +97,18 @@ def _ensure_inputstream_adaptive():
 
 
 def list_root(handle, base_url, channels):
-    for idx, (name, _) in enumerate(channels):
+    for idx, (name, _, icon) in enumerate(channels):
         item = xbmcgui.ListItem(label=f"{name} (Live)")
         item.setInfo("video", {"title": f"{name} (Live)"})
-        item.setArt({"icon": ADDON_ICON, "thumb": ADDON_ICON})
+        item.setArt({"icon": icon, "thumb": icon})
         item.setProperty("IsPlayable", "true")
         play_url = plugin_url(base_url, {"action": "play", "ch": idx})
         xbmcplugin.addDirectoryItem(handle=handle, url=play_url, listitem=item, isFolder=False)
     xbmcplugin.endOfDirectory(handle)
 
 
-def resolve_play(handle, page_url, channel_name):
-    stream_url, license_url = fetch_stream_url(page_url)
+def resolve_play(handle, page_url, channel_name, fetch_fn):
+    stream_url, license_url = fetch_fn(page_url)
     is_hls = ".m3u8" in stream_url
     log(f"Stream URL: {stream_url}  type={'HLS' if is_hls else 'DASH'}  DRM: {bool(license_url)}")
 
@@ -125,17 +144,46 @@ def resolve_play(handle, page_url, channel_name):
 
 
 def _get_channels():
-    channels = [
+    """Return list of (name, url, icon) for all configured channels."""
+    raw = [
+        # M4 Sport channels — use m4sport_core
         (
             ADDON.getSetting("channel_name") or "M4 Sport",
             ADDON.getSetting("source_page_url") or "https://mediaklikk.hu/elo/mtv4live/",
+            m4sport_core,
         ),
         (
             ADDON.getSetting("channel_name_2") or "M4 Sport direct",
             ADDON.getSetting("source_page_url_2") or "https://m4sport.hu/elo",
+            m4sport_core,
+        ),
+        # Mediaklikk channels — use mediaklikk_core
+        (
+            ADDON.getSetting("channel_name_3") or "M1",
+            ADDON.getSetting("source_page_url_3") or "https://mediaklikk.hu/elo/mtv1live/",
+            mediaklikk_core,
+        ),
+        (
+            ADDON.getSetting("channel_name_4") or "M2",
+            ADDON.getSetting("source_page_url_4") or "https://mediaklikk.hu/elo/mtv2live/",
+            mediaklikk_core,
+        ),
+        (
+            ADDON.getSetting("channel_name_5") or "Duna TV",
+            ADDON.getSetting("source_page_url_5") or "https://mediaklikk.hu/elo/dunalive/",
+            mediaklikk_core,
+        ),
+        (
+            ADDON.getSetting("channel_name_6") or "M5",
+            ADDON.getSetting("source_page_url_6") or "https://mediaklikk.hu/elo/mtv5live/",
+            mediaklikk_core,
         ),
     ]
-    return [(name, url) for name, url in channels if url.strip()]
+    return [
+        (name, url, _icon_for_url(url), core)
+        for name, url, core in raw
+        if url.strip()
+    ]
 
 
 def run():
@@ -155,8 +203,8 @@ def run():
             ch_idx = int(params.get("ch", ["0"])[0])
         except (ValueError, IndexError):
             ch_idx = 0
-        channel_name, page_url = channels[min(ch_idx, len(channels) - 1)]
-        resolve_play(handle, normalize_page_url(page_url), channel_name)
+        channel_name, page_url, _icon, core = channels[min(ch_idx, len(channels) - 1)]
+        resolve_play(handle, core.normalize_page_url(page_url), channel_name, core.fetch_stream_url)
     else:
         list_root(handle, base_url, channels)
 

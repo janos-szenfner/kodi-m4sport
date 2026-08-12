@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <settings>
-    <category label="General">
+    <category label="M4 Sport">
         <setting id="source_page_url" type="text" label="Channel 1 URL"
                  default="https://mediaklikk.hu/elo/mtv4live/" />
         <setting id="channel_name" type="text" label="Channel 1 name"
@@ -9,5 +9,23 @@
                  default="https://m4sport.hu/elo" />
         <setting id="channel_name_2" type="text" label="Channel 2 name"
                  default="M4 Sport direct" />
+    </category>
+    <category label="Mediaklikk">
+        <setting id="source_page_url_3" type="text" label="Channel 3 URL"
+                 default="https://mediaklikk.hu/elo/mtv1live/" />
+        <setting id="channel_name_3" type="text" label="Channel 3 name"
+                 default="M1" />
+        <setting id="source_page_url_4" type="text" label="Channel 4 URL"
+                 default="https://mediaklikk.hu/elo/mtv2live/" />
+        <setting id="channel_name_4" type="text" label="Channel 4 name"
+                 default="M2" />
+        <setting id="source_page_url_5" type="text" label="Channel 5 URL"
+                 default="https://mediaklikk.hu/elo/dunalive/" />
+        <setting id="channel_name_5" type="text" label="Channel 5 name"
+                 default="Duna TV" />
+        <setting id="source_page_url_6" type="text" label="Channel 6 URL"
+                 default="https://mediaklikk.hu/elo/mtv5live/" />
+        <setting id="channel_name_6" type="text" label="Channel 6 name"
+                 default="M5" />
     </category>
 </settings>
