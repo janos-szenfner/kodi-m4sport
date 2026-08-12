@@ -1,7 +1,13 @@
 name: Release
 
 # Builds the Kodi-installable zip and publishes it as a GitHub Release
-# whenever the version in plugin.video.m4sport/addon.xml changes.
+# whenever the version in plugin.video.mtvlive/addon.xml changes.
+#
+# Note the two different names in play:
+#   plugin.video.mtvlive  - the addon id and the folder inside the archive.
+#                           Kodi requires these to be identical.
+#   plugin.video.MTV-all  - the published zip filename. Cosmetic; Kodi never
+#                           reads it. Set in build.sh (ZIP_BASE).
 #
 # To cut a release: bump version="..." in addon.xml, commit, push to main.
 # Pushes that do not change the version just rebuild the zip as a check and
@@ -11,12 +17,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'plugin.video.m4sport/**'
+      - 'plugin.video.mtvlive/**'
       - 'build.sh'
       - '.github/workflows/release.yml'
   pull_request:
     paths:
-      - 'plugin.video.m4sport/**'
+      - 'plugin.video.mtvlive/**'
       - 'build.sh'
   workflow_dispatch:
 
@@ -34,29 +40,41 @@ jobs:
         run: |
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
           import xml.etree.ElementTree as ET
-          root = ET.parse("plugin.video.m4sport/addon.xml").getroot()
+          root = ET.parse("plugin.video.mtvlive/addon.xml").getroot()
           print(f"id={root.get('id')}")
           print(f"version={root.get('version')}")
           print(f"tag=v{root.get('version')}")
           PY
 
+      # Take the filename from whatever build.sh produced rather than
+      # rebuilding it here, so ZIP_BASE lives in exactly one place.
       - name: Build zip
-        run: ./build.sh
-
-      # build.sh already fails if the archive root is not exactly the addon
-      # folder. This re-checks the published artifact independently, since a
-      # zip Kodi rejects is the one bug this whole workflow exists to prevent.
-      - name: Verify Kodi archive structure
+        id: build
         run: |
-          zip="dist/${{ steps.meta.outputs.id }}-${{ steps.meta.outputs.version }}.zip"
-          roots=$(unzip -Z1 "$zip" | cut -d/ -f1 | sort -u)
-          if [ "$roots" != "${{ steps.meta.outputs.id }}" ]; then
-            echo "::error::Archive root must be exactly '${{ steps.meta.outputs.id }}', got: $roots"
+          ./build.sh
+          count=$(ls -1 dist/*.zip | wc -l)
+          if [ "$count" -ne 1 ]; then
+            echo "::error::expected exactly one zip in dist/, found $count"
             exit 1
           fi
-          unzip -Z1 "$zip" | grep -qx "${{ steps.meta.outputs.id }}/addon.xml" \
+          echo "zip=$(ls dist/*.zip)" >> "$GITHUB_OUTPUT"
+
+      # build.sh already fails if the archive root is not exactly the addon
+      # folder. This re-checks the built artifact independently, since a zip
+      # Kodi rejects is the one bug this whole workflow exists to prevent.
+      - name: Verify Kodi archive structure
+        env:
+          ZIP: ${{ steps.build.outputs.zip }}
+          ADDON_ID: ${{ steps.meta.outputs.id }}
+        run: |
+          roots=$(unzip -Z1 "$ZIP" | cut -d/ -f1 | sort -u)
+          if [ "$roots" != "$ADDON_ID" ]; then
+            echo "::error::Archive root must be exactly '$ADDON_ID', got: $roots"
+            exit 1
+          fi
+          unzip -Z1 "$ZIP" | grep -qx "$ADDON_ID/addon.xml" \
             || { echo "::error::addon.xml missing from archive root folder"; exit 1; }
-          echo "Archive structure OK"
+          echo "Archive structure OK: $ZIP contains $ADDON_ID/"
 
       - name: Check whether this version is already released
         if: github.event_name != 'pull_request'
@@ -78,13 +96,14 @@ jobs:
           TAG: ${{ steps.meta.outputs.tag }}
           VERSION: ${{ steps.meta.outputs.version }}
           ADDON_ID: ${{ steps.meta.outputs.id }}
+          ZIP: ${{ steps.build.outputs.zip }}
         run: |
-          gh release create "$TAG" "dist/${ADDON_ID}-${VERSION}.zip" \
-            --title "$ADDON_ID $VERSION" \
+          gh release create "$TAG" "$ZIP" \
+            --title "Magyar TV Live $VERSION" \
             --target "$GITHUB_SHA" \
-            --notes "Kodi-installable zip for **$ADDON_ID** $VERSION.
+            --notes "Kodi-installable zip for **Magyar TV Live** ($ADDON_ID) $VERSION.
 
-          **Install:** download \`${ADDON_ID}-${VERSION}.zip\` below, then in Kodi go to
+          **Install:** download \`$(basename "$ZIP")\` below, then in Kodi go to
           **Settings → Add-ons → Install from zip file** and select it.
 
           Do not re-zip the source tree with Finder — macOS adds a \`__MACOSX/\`

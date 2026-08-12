@@ -8,7 +8,13 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-ADDON_DIR="plugin.video.m4sport"
+# The folder inside the archive.  Kodi requires this to equal the addon id in
+# addon.xml, so the two are checked against each other below.
+ADDON_DIR="plugin.video.mtvlive"
+
+# The published filename.  This is cosmetic — Kodi never reads it — so it is
+# free to differ from the addon id.
+ZIP_BASE="plugin.video.MTV-all"
 
 # Read id/version from the <addon> element itself.  Do not grep for
 # version="..." — the XML declaration on line 1 also matches it.
@@ -24,7 +30,7 @@ if [ "$ADDON_ID" != "$ADDON_DIR" ]; then
     exit 1
 fi
 
-OUT="dist/${ADDON_DIR}-${VERSION}.zip"
+OUT="dist/${ZIP_BASE}-${VERSION}.zip"
 
 find . -name '.DS_Store' -not -path './.git/*' -delete
 rm -rf dist && mkdir -p dist

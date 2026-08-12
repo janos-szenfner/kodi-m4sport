@@ -19,15 +19,27 @@ Stream URLs are resolved dynamically at play time — no hardcoded permanent URL
 
 ## Installation
 
-1. Build the ZIP with `./build.sh` (writes `dist/plugin.video.m4sport-<version>.zip`).
+1. Build the ZIP with `./build.sh` (writes `dist/plugin.video.MTV-all-<version>.zip`).
 2. In Kodi: **Settings → Add-ons → Install from zip file**.
 3. Select the ZIP file.
 4. Open the plugin at **Add-ons → Video add-ons → Magyar TV Live**.
 
 > **Do not zip the folder with Finder's "Compress".** macOS adds a `__MACOSX/`
-> folder alongside `plugin.video.m4sport/`, and Kodi rejects any archive whose
+> folder alongside `plugin.video.mtvlive/`, and Kodi rejects any archive whose
 > root holds more than one entry — it fails with an add-on structure error
 > before it ever reads `addon.xml`. `build.sh` excludes that cruft.
+
+### Two names, on purpose
+
+| Name | What it is | Where it is set |
+|------|------------|-----------------|
+| `plugin.video.mtvlive` | Add-on id, and the folder inside the zip. **Kodi requires these to be identical** — a mismatch is rejected at install. | `addon.xml` + folder name |
+| `plugin.video.MTV-all` | The published zip filename. Cosmetic; Kodi never reads it. | `ZIP_BASE` in `build.sh` |
+
+The add-on id changed from `plugin.video.m4sport` in v1.2.0. Kodi treats a new
+id as a different add-on, so it installs alongside the old one rather than
+upgrading it — remove the old **M4 Sport / Magyar TV Live** add-on first, and
+note that its channel URL/name settings do not carry over.
 
 ## Channel-group isolation
 
