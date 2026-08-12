@@ -40,12 +40,14 @@ _DEFAULT_STREAM_HEADERS = (
 
 # Map URL substrings to icon filenames in resources/media/
 _URL_ICON_MAP = (
-    ("m4sport.hu",  "m4sport.png"),
-    ("/mtv4live",   "m4sport.png"),
-    ("/mtv1live",   "m1.png"),
-    ("/mtv2live",   "m2.png"),
-    ("/mtv5live",   "m5.png"),
-    ("/dunalive",   "duna.png"),
+    ("m4sport.hu",      "m4sport.png"),
+    ("/mtv4plus",       "m4plusz.png"),
+    ("/mtv4live",       "m4sport.png"),
+    ("/mtv1live",       "m1.png"),
+    ("/mtv2live",       "m2.png"),
+    ("/mtv5live",       "m5.png"),
+    ("/dunaworldlive",  "dunaworld.png"),
+    ("/dunalive",       "duna.png"),
 )
 
 
@@ -112,7 +114,7 @@ def list_root(handle, base_url, channels):
     xbmcplugin.endOfDirectory(handle)
 
 
-def resolve_play(handle, page_url, channel_name, core):
+def resolve_play(handle, page_url, channel_name, core, icon=None):
     stream_url, license_url = core.fetch_stream_url(page_url)
     is_hls = ".m3u8" in stream_url
     log(f"Stream URL: {stream_url}  type={'HLS' if is_hls else 'DASH'}  DRM: {bool(license_url)}")
@@ -131,6 +133,12 @@ def resolve_play(handle, page_url, channel_name, core):
 
     list_item = xbmcgui.ListItem(label=channel_name, path=stream_url)
     list_item.setInfo("video", {"title": channel_name})
+    # Give the playing item its own channel art explicitly. Without this the
+    # resolved item carries no art and Kodi falls back to whatever it has
+    # cached for the plugin path, which is what makes the add-on's own icon
+    # appear to change to the last channel played.
+    if icon:
+        list_item.setArt({"icon": icon, "thumb": icon})
     list_item.setMimeType(mime_type)
     list_item.setContentLookup(False)
     list_item.setProperty("inputstream", _INPUTSTREAM_ADDON)
@@ -164,6 +172,10 @@ _CHANNEL_DEFS = (
      "source_page_url", "https://mediaklikk.hu/elo/mtv4live/", "m4sport_core"),
     ("m4sport_direct", "channel_name_2", "M4 Sport direct",
      "source_page_url_2", "https://m4sport.hu/elo", "m4sport_core"),
+    # Note: M4 Sport+ breaks the "<slug>live" convention the others follow —
+    # its live page really is /elo/mtv4plus/, with no "live" suffix.
+    ("m4plusz", "channel_name_7", "M4 Sport+",
+     "source_page_url_7", "https://mediaklikk.hu/elo/mtv4plus/", "m4sport_core"),
     # Mediaklikk channels — mediaklikk_core
     ("m1", "channel_name_3", "M1",
      "source_page_url_3", "https://mediaklikk.hu/elo/mtv1live/", "mediaklikk_core"),
@@ -171,6 +183,8 @@ _CHANNEL_DEFS = (
      "source_page_url_4", "https://mediaklikk.hu/elo/mtv2live/", "mediaklikk_core"),
     ("duna", "channel_name_5", "Duna TV",
      "source_page_url_5", "https://mediaklikk.hu/elo/dunalive/", "mediaklikk_core"),
+    ("dunaworld", "channel_name_8", "Duna World",
+     "source_page_url_8", "https://mediaklikk.hu/elo/dunaworldlive/", "mediaklikk_core"),
     ("m5", "channel_name_6", "M5",
      "source_page_url_6", "https://mediaklikk.hu/elo/mtv5live/", "mediaklikk_core"),
 )
@@ -230,9 +244,9 @@ def run():
                 )
                 xbmcplugin.setResolvedUrl(handle, False, xbmcgui.ListItem())
                 return
-        _ch_id, channel_name, page_url, _icon, core_name = selected
+        _ch_id, channel_name, page_url, icon, core_name = selected
         core = _load_core(core_name)
-        resolve_play(handle, core.normalize_page_url(page_url), channel_name, core)
+        resolve_play(handle, core.normalize_page_url(page_url), channel_name, core, icon)
     else:
         list_root(handle, base_url, channels)
 

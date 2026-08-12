@@ -10,10 +10,17 @@ Installed name in Kodi: **Magyar TV Live**
 |---------|-------------|
 | M4 Sport | `https://mediaklikk.hu/elo/mtv4live/` |
 | M4 Sport direct | `https://m4sport.hu/elo` |
+| M4 Sport+ | `https://mediaklikk.hu/elo/mtv4plus/` |
 | M1 | `https://mediaklikk.hu/elo/mtv1live/` |
 | M2 | `https://mediaklikk.hu/elo/mtv2live/` |
 | Duna TV | `https://mediaklikk.hu/elo/dunalive/` |
+| Duna World | `https://mediaklikk.hu/elo/dunaworldlive/` |
 | M5 | `https://mediaklikk.hu/elo/mtv5live/` |
+
+Note the live-page slugs follow a `<name>live` pattern, except **M4 Sport+**,
+whose page is `/elo/mtv4plus/` with no `live` suffix. An unknown slug does not
+404 — mediaklikk serves a fallback page whose `streamId` is `dunalive`, so a
+wrong URL silently plays Duna TV instead of failing.
 
 Stream URLs are resolved dynamically at play time — no hardcoded permanent URLs.
 
@@ -80,7 +87,7 @@ DRM-protected streams (Widevine) are handled by the bundled CDM installer.
 | `resources/lib/m4sport_core.py` | Stream extraction for M4 Sport channels |
 | `resources/lib/mediaklikk_core.py` | Stream extraction for M1/M2/M5/Duna channels |
 | `resources/lib/cdm_installer.py` | Widevine CDM installer (bundled, no external deps) |
-| `resources/media/` | Per-channel logos (m1.png, m2.png, m5.png, duna.png, m4sport.png) |
+| `resources/media/` | Per-channel logos (m1, m2, m5, duna, dunaworld, m4sport, m4plusz) |
 | `resources/settings.xml` | Configurable channel URLs and names |
 | `addon.xml` | Kodi addon metadata |
 
