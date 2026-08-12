@@ -1,6 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Stream extraction for the Mediaklikk channels: M1, M2, M5, Duna TV.
+
+DELIBERATE DUPLICATE OF m4sport_core.py — DO NOT MERGE THE TWO.
+
+The two cores currently contain the same algorithm, but they are separate
+modules on purpose: mediaklikk.hu and m4sport.hu are different sites that
+can change independently.  This file may be edited freely to chase changes
+on mediaklikk.hu without any risk to M4 Sport playback, which goes through
+m4sport_core.py and never imports this module.
+"""
+
 import json
 import re
 import time
@@ -13,8 +24,16 @@ USER_AGENT = (
     "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 )
 
+# Headers Kodi/inputstream.adaptive sends when pulling the manifest and
+# segments.  Owned by this module so it can diverge from m4sport_core.
+STREAM_HEADERS = (
+    "User-Agent=Mozilla%2F5.0+%28X11%3B+Linux+x86_64%29+AppleWebKit%2F537.36"
+    "+%28KHTML%2C+like+Gecko%29+Chrome%2F125.0.0.0+Safari%2F537.36"
+    "&Referer=https%3A%2F%2Fplayer.mediaklikk.hu%2F"
+)
 
-__all__ = ["AddonError", "normalize_page_url", "fetch_stream_url"]
+
+__all__ = ["AddonError", "STREAM_HEADERS", "normalize_page_url", "fetch_stream_url"]
 
 
 class AddonError(Exception):

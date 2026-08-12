@@ -19,10 +19,32 @@ Stream URLs are resolved dynamically at play time — no hardcoded permanent URL
 
 ## Installation
 
-1. Create a ZIP archive with `plugin.video.m4sport/` as the top-level folder (must contain `addon.xml`).
+1. Build the ZIP with `./build.sh` (writes `dist/plugin.video.m4sport-<version>.zip`).
 2. In Kodi: **Settings → Add-ons → Install from zip file**.
 3. Select the ZIP file.
 4. Open the plugin at **Add-ons → Video add-ons → Magyar TV Live**.
+
+> **Do not zip the folder with Finder's "Compress".** macOS adds a `__MACOSX/`
+> folder alongside `plugin.video.m4sport/`, and Kodi rejects any archive whose
+> root holds more than one entry — it fails with an add-on structure error
+> before it ever reads `addon.xml`. `build.sh` excludes that cruft.
+
+## Channel-group isolation
+
+M4 Sport and the Mediaklikk channels are served by two independent extraction
+modules, so that chasing a breakage on one site can never take the other down:
+
+- Each channel names its core module, which is imported **only when that
+  channel is played**. A syntax error or bad import in `mediaklikk_core.py`
+  leaves M4 Sport playable and the channel list intact.
+- Playback URLs carry a **stable channel id** (`?ch=m4sport`), not a list
+  position, so renaming or blanking other channels in Settings cannot make a
+  saved favourite point at the wrong stream.
+- Each core owns its own `STREAM_HEADERS`, so the Referer/User-Agent can be
+  tuned for one site without touching the other.
+
+`m4sport_core.py` and `mediaklikk_core.py` currently hold the same algorithm.
+That duplication is deliberate — **do not merge them.**
 
 ## How it works
 

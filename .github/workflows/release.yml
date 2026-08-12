@@ -1,0 +1,91 @@
+name: Release
+
+# Builds the Kodi-installable zip and publishes it as a GitHub Release
+# whenever the version in plugin.video.m4sport/addon.xml changes.
+#
+# To cut a release: bump version="..." in addon.xml, commit, push to main.
+# Pushes that do not change the version just rebuild the zip as a check and
+# publish nothing.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'plugin.video.m4sport/**'
+      - 'build.sh'
+      - '.github/workflows/release.yml'
+  pull_request:
+    paths:
+      - 'plugin.video.m4sport/**'
+      - 'build.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read addon id and version
+        id: meta
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import xml.etree.ElementTree as ET
+          root = ET.parse("plugin.video.m4sport/addon.xml").getroot()
+          print(f"id={root.get('id')}")
+          print(f"version={root.get('version')}")
+          print(f"tag=v{root.get('version')}")
+          PY
+
+      - name: Build zip
+        run: ./build.sh
+
+      # build.sh already fails if the archive root is not exactly the addon
+      # folder. This re-checks the published artifact independently, since a
+      # zip Kodi rejects is the one bug this whole workflow exists to prevent.
+      - name: Verify Kodi archive structure
+        run: |
+          zip="dist/${{ steps.meta.outputs.id }}-${{ steps.meta.outputs.version }}.zip"
+          roots=$(unzip -Z1 "$zip" | cut -d/ -f1 | sort -u)
+          if [ "$roots" != "${{ steps.meta.outputs.id }}" ]; then
+            echo "::error::Archive root must be exactly '${{ steps.meta.outputs.id }}', got: $roots"
+            exit 1
+          fi
+          unzip -Z1 "$zip" | grep -qx "${{ steps.meta.outputs.id }}/addon.xml" \
+            || { echo "::error::addon.xml missing from archive root folder"; exit 1; }
+          echo "Archive structure OK"
+
+      - name: Check whether this version is already released
+        if: github.event_name != 'pull_request'
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.meta.outputs.tag }}" >/dev/null 2>&1; then
+            echo "Release ${{ steps.meta.outputs.tag }} already exists — nothing to publish."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish release
+        if: github.event_name != 'pull_request' && steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          ADDON_ID: ${{ steps.meta.outputs.id }}
+        run: |
+          gh release create "$TAG" "dist/${ADDON_ID}-${VERSION}.zip" \
+            --title "$ADDON_ID $VERSION" \
+            --target "$GITHUB_SHA" \
+            --notes "Kodi-installable zip for **$ADDON_ID** $VERSION.
+
+          **Install:** download \`${ADDON_ID}-${VERSION}.zip\` below, then in Kodi go to
+          **Settings → Add-ons → Install from zip file** and select it.
+
+          Do not re-zip the source tree with Finder — macOS adds a \`__MACOSX/\`
+          folder and Kodi rejects the archive. Use \`./build.sh\`."
