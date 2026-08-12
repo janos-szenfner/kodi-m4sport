@@ -4,12 +4,12 @@ Extract a playable live stream URL from mediaklikk.hu / m4sport.hu live pages
 and optionally open it in VLC.
 
 Usage:
-  python3 m4sport-vlc.py                        # list channels, play first (M4 Sport)
-  python3 m4sport-vlc.py --channel m1           # play M1 by short name
-  python3 m4sport-vlc.py --channel duna         # play Duna TV
-  python3 m4sport-vlc.py https://...            # any mediaklikk live page URL
-  python3 m4sport-vlc.py --list                 # show all known channels
-  python3 m4sport-vlc.py --open-vlc             # resolve + launch VLC
+  python3 mtv-live-vlc.py                        # resolve default channel (M4 Sport)
+  python3 mtv-live-vlc.py --channel m1           # play M1 by short name
+  python3 mtv-live-vlc.py --channel duna         # play Duna TV
+  python3 mtv-live-vlc.py https://...            # any mediaklikk live page URL
+  python3 mtv-live-vlc.py --list                 # show all known channels
+  python3 mtv-live-vlc.py --open-vlc             # resolve + launch VLC
 """
 
 from __future__ import annotations

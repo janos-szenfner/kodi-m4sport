@@ -97,7 +97,7 @@ def _ensure_inputstream_adaptive():
 
 
 def list_root(handle, base_url, channels):
-    for idx, (name, _, icon) in enumerate(channels):
+    for idx, (name, _url, icon, _core) in enumerate(channels):
         item = xbmcgui.ListItem(label=f"{name} (Live)")
         item.setInfo("video", {"title": f"{name} (Live)"})
         item.setArt({"icon": icon, "thumb": icon})
@@ -144,7 +144,7 @@ def resolve_play(handle, page_url, channel_name, fetch_fn):
 
 
 def _get_channels():
-    """Return list of (name, url, icon) for all configured channels."""
+    """Return list of (name, url, icon, core_module) for all configured channels."""
     raw = [
         # M4 Sport channels — use m4sport_core
         (
