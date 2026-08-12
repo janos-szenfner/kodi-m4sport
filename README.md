@@ -36,10 +36,13 @@ Stream URLs are resolved dynamically at play time — no hardcoded permanent URL
 | `plugin.video.mtvlive` | Add-on id, and the folder inside the zip. **Kodi requires these to be identical** — a mismatch is rejected at install. | `addon.xml` + folder name |
 | `plugin.video.MTV-all` | The published zip filename. Cosmetic; Kodi never reads it. | `ZIP_BASE` in `build.sh` |
 
-The add-on id changed from `plugin.video.m4sport` in v1.2.0. Kodi treats a new
-id as a different add-on, so it installs alongside the old one rather than
-upgrading it — remove the old **M4 Sport / Magyar TV Live** add-on first, and
-note that its channel URL/name settings do not carry over.
+The add-on id changed from `plugin.video.m4sport` in **v1.2.1**. Kodi treats a
+new id as a different add-on, so it installs alongside the old one rather than
+upgrading it — remove the old **Magyar TV Live** add-on first, and note that
+its channel URL/name settings do not carry over.
+
+Releases up to and including v1.2.0 use the old `plugin.video.m4sport` id and
+filename; v1.2.1 onwards use `plugin.video.mtvlive` / `plugin.video.MTV-all`.
 
 ## Channel-group isolation
 
